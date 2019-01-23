@@ -1,5 +1,4 @@
 
-
 class EditTitle extends React.Component {
 	
 }
@@ -8,7 +7,7 @@ class Header extends React.Component {
 	state = {
 		title: "Click here",
 		value: "Click here",
-		txt: <p>sadf</p>,
+		txt: <p></p>,
 	};
 
 	changeTitle = (event) => {
@@ -53,43 +52,36 @@ class Header extends React.Component {
 		}
 	}
 }
-/*
-function elem(value) {
-	return value;
-}
-*/
-/*
-function editContent(props) {
-		
-		this.setState({
-			activeElement: 1,
-			value: "elem.child",
-		})
-
-//		<p><textarea defaultValue={child} id="edit"></textarea><button onClick={this.saveEdit.bind(this, child, objIndex)}>save</button></p>;
-		
-	console.log(props);
-}
-*/
 
 class Content extends React.Component {
 
 	constructor(props) {
         super(props)
-		this.handler = this.handler.bind(this);
+		this.editContent = this.editContent.bind(this);
+		this.addCol = this.addCol.bind(this);
+		this.newRow = this.newRow.bind(this);
+		this.delCol = this.delCol.bind(this);
+		this.delRow = this.delRow.bind(this);
+		this.updateStyle = this.updateStyle.bind(this);
+		this.handleChange = this.handleChange.bind(this);
+		
 		this.state = {
 			activeElement: 0,
 			selectedRow: 0,
 			width: "100px",
             txt: "<p></p>",
-			toggle: true
-        }
+			toggle: true,
+			loaded: 0,
+			updateStyle: 0
+        }		
     }
-
-	editContent(e) {
+	
+	editContent(e, event) {
+//		event.preventDefault();
+		console.log(event.target.id);
+		document.getElementById(e.rowId+""+e.id).contentEditable = "true";
+		
 		this.setState({activeElement: e.id, selectedRow: e.rowId, txt: e.child});
-		console.log(this.state.width);
-	//	console.log();
 	}
 	
 	editableForm = (obj) => {
@@ -142,7 +134,7 @@ class Content extends React.Component {
 
 
 	selectRow(i) {
-//		this.setState({selectedRow: i});
+		this.setState({selectedRow: i});
 	}
 	
 	addCol(c) {
@@ -150,30 +142,76 @@ class Content extends React.Component {
 		for (let a = 0; a < c; a++) {
 			contents[this.state.selectedRow].push({id: contents[this.state.selectedRow].length, rowId: this.state.selectedRow, type: 'div', cls: 'txt col-sm-4', child: 'Lorem Ipsum'});
 		}
-		this.setState(state => ({toggle: !state.toggle }));
+		this.setState({activeElement: 0, loaded: 1});
 	}
 	
-	newRow() {
+	newRow(c) {
 		contents.splice(this.state.selectedRow, 0, []);
 		for (let a = this.state.selectedRow; a < contents.length; a++) {
 			for (let i = 0; i < contents[a].length; i++) {
 				contents[a][i].rowId = contents[a][i].rowId+1;
 			}
 		}
-		this.addCol(3);
-	}
-	
-	handler(c) {
-		if (c == 'col') {
-			this.addCol(1);
-		}
-		if (c == 'row') {
-			this.newRow();
-		}
+		console.log(c);
+		this.addCol(c);
 	}
 
+	delCol() {
+		if (contents[this.state.selectedRow].length-1) {
+			var a = this.state.activeElement;
+			for (let i = a; i < contents[this.state.selectedRow].length-1; i++) {
+				contents[this.state.selectedRow][i] = contents[this.state.selectedRow][i+1];
+				contents[this.state.selectedRow][i].id = contents[this.state.selectedRow][i+1].id-1;
+				console.log(contents[this.state.selectedRow][i]);
+			}
+			contents[this.state.selectedRow].pop();	
+			this.setState({activeElement: (!a ? a : a-1), loaded: 1});
+		} else {			
+			this.delRow();
+		}
+	}
+	
+	delRow() {
+		var a = this.state.selectedRow;
+		for (let i = a; i < contents.length-1; i++) {
+				contents[i] = contents[i+1];
+		}
+		
+		for (let i = a; i < contents.length-1; i++) {
+			for (let b = 0; b < contents[a].length; b++) {
+				contents[i][b].rowId = i;
+			}
+		}	
+		
+		contents.pop();
+		this.setState({selectedRow: (!a ? a : a-1), activeElement: 0, loaded: 1});
+	}
+	
+	updateStyle(style) {
+		console.log(style);
+		document.execCommand(style);
+		this.handleChange();
+	}
+	
+	handleChange() {
+		console.log("change");
+		contents[this.state.selectedRow][this.state.activeElement].child = document.getElementById(this.state.selectedRow + "" + this.state.activeElement).innerHTML;
+	}
+	
 	componentDidUpdate() {
 		var w = window.getComputedStyle(ReactDOM.findDOMNode(this.refs.s_elem)).getPropertyValue("width");
+			var i = 0;
+			
+		if (this.state.loaded || this.props.loaded) {
+			console.log("Update innerHTML");
+			for (let row = 0; row < contents.length; row++) {
+				for (let col = 0; col < contents[row].length; col++) {
+					document.getElementById(row + "" + col).innerHTML = contents[row][col].child;
+				}
+			}
+			this.setState({loaded: 0});
+		}
+		var copy = document.getElementById("cell");
 		if (this.state.width != w) {
 			this.setState({width: w});
 		}
@@ -184,42 +222,42 @@ class Content extends React.Component {
 		
 	}
 	
-/*
-	elem(value, index, array) 
-	{
-	return value;
-	}
-*/	
-//<p className="txt" onClick={this.editContent} key="1">content 1</p>
 	render() {
-		/*
-		const lements = [<p className="txt" onClick={this.editContent.bind(this, 1)} key="1">content 1</p>, <p className="txt" onClick={this.editContent.bind(this, 2)} key="2">content 2</p>];
 
-		const lements = [];
-		*/
 		let i = 0;		
 		var c=3;
+		var t = 0, p = 0;
 		return(
-		<div className="container">
+		<div className="container" id="edit">
 		{[...Array(contents.length)].map((e, i) => 
 			<React.Fragment>
-			<div className={i == this.state.selectedRow ? 'row selrow' : 'row'} onClick={this.selectRow.bind(this, i)} key={i}>
+			<div className={i == this.state.selectedRow ? 'row selrow' : 'row'} onClick={this.selectRow.bind(this, i)}>
 			{
 				contents[i].map((elem, r) => 
 					
 					React.createElement(
 					elem.type,
-					{className: ((r==this.state.activeElement && i == this.state.selectedRow) ? 'col selcol' : 'col txt'), onClick: this.editContent.bind(this, elem), key: i*r+r, ref: ((r==this.state.activeElement && i == this.state.selectedRow) ? 's_elem' : '')},
-					elem.child
+					{
+						className: ((r==this.state.activeElement && i == this.state.selectedRow) ? 'col selcol' : 'col txt'), 
+						onClick: (event) => this.editContent(elem, event),
+						onKeyUp: this.handleChange,
+						key: i + "" + r,
+						id: i + "" + r,
+						ref: ((r==this.state.activeElement && i == this.state.selectedRow) ? 's_elem' : '')
+					},
+					"Lorem Ipsum"
 					)
-					
-					
-				//	<div onClick={this.editContent.bind(this, elem)} key={elem.id}>{this.actualForm(elem.child)}</div>
 				)
 			}		
 			
 			</div>
-			{i == this.state.selectedRow && <ContentEditor e={this.state} addCol = {(e) => this.handler('col', e)} newRow = {(e) => this.handler('row', e)} />}
+			{i == this.state.selectedRow && <ContentEditor e={this.state}
+				addCol = {(e) => this.addCol(1, e)}
+				newRow = {this.newRow}
+				delCol = {(e) => this.delCol(e)}
+				delRow = {(e) => this.delRow(e)}
+				updateStyle = {this.updateStyle}
+			/>}
 			</React.Fragment>
 			
 			)
@@ -249,9 +287,15 @@ class ContentEditor extends React.Component {
 		 this.state = {
 			s: 0,
             value: "",
+			cols: 1,
+			cls: "col-sm-",
 			toggle: true
         }
 		this.editContent = this.editContent.bind(this);
+		this.addCol = this.addCol.bind(this);
+		this.handleChange = this.handleChange.bind(this);
+		this.changeTextStyle = this.changeTextStyle.bind(this);
+		this.newRow = this.newRow.bind(this);
     }
 	
 	editContent(event) {
@@ -267,7 +311,7 @@ class ContentEditor extends React.Component {
 		}
 		this.setState({s: 1, value: event.target.value});
 	}
-
+/*
 	addCol(c) {
 		console.log(this.props.e.selectedRow+i);
 		for (let a = 0; a < c; a++) {
@@ -275,10 +319,13 @@ class ContentEditor extends React.Component {
 		}
 		this.setState(state => ({toggle: !state.toggle }));
 	}
-	
+	*/
 	newRow() {
-		contents.splice(this.props.e.selectedRow, 0, []);
-		this.addCol(3);
+		this.props.newRow(this.state.cols);
+	}
+	
+	addCol() {
+		this.props.addCol();
 	}
 	
 	prepareEdit (state, props) {
@@ -290,6 +337,20 @@ class ContentEditor extends React.Component {
 		}
 	}
 	
+	handleChange(ref, event) {
+		if (ref == "cols") {
+			this.setState({cols: event.target.value});
+		}
+		if (ref == "cls") {
+			this.setState({cls: event.target.value});
+		}
+	}
+	
+	changeTextStyle(style) {
+		console.log("style");
+		this.props.updateStyle(style);
+	}
+	
 	shouldComponentUpdate() {
 		return !this.state.s;
 	}
@@ -298,12 +359,8 @@ class ContentEditor extends React.Component {
 		if (!this.state.s) {
 			this.setState({s: 1, value: this.props.e.txt});
 		} else {
-			this.setState( {s: 0 } );
+			this.setState( {s: 0} );
 		}
-	}
-	
-	editValue() {
-		return this.state.value;
 	}
 	
 	componentDidMount() {
@@ -311,22 +368,39 @@ class ContentEditor extends React.Component {
 		this.setState(state => ({toggle: !state.toggle }));
 		
 	}
-	
 	render() {
+	var i = 0;
 		return(
 		<React.Fragment>
 			<div className="row txt">
 			<div className="col">			
-			<textarea style={{width: (this.props.e.width)}} value={this.state.value} onChange={this.editContent} ref={input => input && input.focus()}></textarea>
+			{/*	<textarea style={{width: (this.props.e.width)}} value={this.state.value} onChange={this.editContent} ref={input => input && input.focus()}></textarea> */}
+			
 			<p>
-			<button onClick={this.props.addCol}>Add col</button>
-			<button onClick={this.props.newRow}>New row</button>
-			<select>
+				<button onClick={() => this.changeTextStyle("bold")}>b</button>
+				<button onClick={() => this.changeTextStyle("italic")}><i>i</i></button>
+				<button onClick={() => this.changeTextStyle("underline")}><u>u</u></button>
+			</p>
+			
+			<p>
+			<button onClick={this.addCol}>Add col</button>
+			<select value={this.state.cls} onChange={(event) => this.handleChange("cls", event)}>
 				<option value=".col-sm-">.col-sm-</option>
 				<option value=".col-md-">.col-md-</option>
 				<option value=".col-lg-">.col-lg-</option>
 				<option value=".col-xl-">.col-xl-</option>
 			</select>
+			<button onClick={this.newRow}>New row</button> with
+			<select value={this.state.cols} onChange={(event) => this.handleChange("cols", event)}>
+			{[...Array(9)].map((e, i) => <option value={i+1}>{i+1}</option>)}
+			</select>
+			columns
+			</p>
+			<p>
+				<button onClick={this.props.delCol}>Delete col</button>
+			</p>
+			<p>
+				
 			</p>
 			</div>
 			</div>
@@ -348,6 +422,14 @@ class Container extends React.Component {
 	
 	save() {
 		console.log(contents[0][0].rowId);
+		var i = 0;
+		
+		for (let row = 0; row < contents.length; row++) {
+			for (let col = 0; col < contents[row].length; col++) {
+				contents[row][col].child = document.getElementById(row + "" + col).innerHTML;
+			}
+		}
+		
 		axios.post('/save', {name: {name: 'Unnamed'}, data: contents})
 		  .then(function (response) {
 			console.log(response);
@@ -373,7 +455,8 @@ class Container extends React.Component {
 				}
 				contents[rowId-1].push(response.data[i]);
 			}
-			console.log(this.state.loaded);
+			console.log(contents.length);
+
 			this.setState({loaded: 1});
 		  })
 		  .catch(function (error) {
@@ -383,29 +466,40 @@ class Container extends React.Component {
 	}
 	
 	saveXML() {
+		var i = 0;
+		for (let row = 0; row < contents.length; row++) {
+			for (let col = 0; col < contents[row].length; col++) {
+				contents[row][col].child = document.getElementById(row + "" + col).innerHTML;
+			}
+		}
 		axios.post('/saveXML', {name: 'Unnamed', data: contents})
 		  .then(function (response) {
-			console.log(response);
+			document.getElementById("xml").value = response.data;
+			
 		  })
 		  .catch(function (error) {
 			console.log(error);
 		  });
 	}
 
+	componentDidUpdate() {
+		if (this.state.loaded) {
+			this.setState({loaded: 0});
+		}
+	}
+	
 	render() {
-//	const content = this.props.xml.con;
-//	const taga = this.props.xml.tag;
 		return (
-//			<this.props.xml.tag>{content}</this.props.xml.tag>
 			<React.Fragment>
 			<Header />
-			<Content />
+			<Content loaded={this.state.loaded}/>
 
 				<button onClick={this.save.bind(this)}>Save</button>
 				<button onClick={this.load.bind(this)}>Load</button>
 				<p>
 				<button onClick={this.saveXML.bind(this)}>Save XML</button>
 				</p>
+				<textarea id="xml" className="xml" readOnly></textarea>
 
 			</React.Fragment>
 		);
@@ -413,19 +507,13 @@ class Container extends React.Component {
 	
 }
 
-const XML = [{tag: 'div', con: 'Hello'}];
-
-//alert(XML['div']['tag']);
-		var editor = "asdads";
 		var contents = [];
 		const classes = 'txt col';
 		let i = 0;
 		for (let b = 0; b < 5; b++) {
 			contents[b] = [];
 			for (let a = 0; a < 3; a++) {
-	//			lements.push(<p className="txt" onClick={this.editContent.bind(this, a)} key={a}>content {a}</p>);
-				contents[b].push({id: a, rowId: b, type: 'div', cls: classes, child: 'content '+a+'<b>asd</b>'});
-	//			id.push({a});
+				contents[b].push({id: a, rowId: b, type: 'div', cls: classes, child: 'Lorem ipsum'});
 			}
 		}
 
